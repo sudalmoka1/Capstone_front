@@ -1,23 +1,48 @@
 <template>
   <div class="space-y-6">
-    <!-- 컨트롤 패널 (출처 필터 & 검색/옵션) -->
-    <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
-      <!-- 출처 필터 탭 -->
-      <div class="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
+    <!-- 종목 필터 표시 (분석 탭에서 종목을 선택해서 넘어온 경우) -->
+    <div
+      v-if="stockFilter"
+      class="flex items-center justify-between bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-3"
+    >
+      <p class="text-sm text-indigo-800">
+        <span class="font-bold">{{ stockFilter.name }}</span> 종목이 언급된 기사만 보는 중
+      </p>
+      <button
+        @click="$emit('clear-stock')"
+        class="text-xs font-bold text-indigo-600 hover:text-indigo-800 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition"
+      >
+        필터 해제 ✕
+      </button>
+    </div>
+
+    <!-- 언론사 필터 탭 (전체 + 언론사별) -->
+    <div class="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+      <div class="flex gap-1 min-w-max">
         <button
-          v-for="tab in ['전체', '네이버금융', '한국경제']"
-          :key="tab"
-          @click="selectedSource = tab"
+          v-for="tab in publisherTabs"
+          :key="tab.name"
+          @click="selectedPublisher = tab.name"
           :class="[
-            'px-4 py-2 text-xs font-bold rounded-lg transition-all w-full sm:w-auto',
-            selectedSource === tab ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            'px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap',
+            selectedPublisher === tab.name
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           ]"
         >
-          {{ tab }}
+          {{ tab.name }}
+          <span
+            v-if="tab.count !== null"
+            :class="['ml-1 font-semibold', selectedPublisher === tab.name ? 'text-indigo-200' : 'text-slate-400']"
+          >
+            {{ tab.count }}
+          </span>
         </button>
       </div>
+    </div>
 
-      <!-- 과장 의심 기사 필터 & 새로고침 -->
+    <!-- 컨트롤 패널 (과장 의심 필터 & 새로고침) -->
+    <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-end items-center gap-4">
       <div class="flex items-center space-x-4 w-full sm:w-auto justify-end">
         <label class="flex items-center cursor-pointer text-xs font-medium text-slate-600">
           <input type="checkbox" v-model="onlyLowScore" class="sr-only peer" />
@@ -72,25 +97,51 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import NewsCard from '@/components/news/NewsCard.vue';
 import ReportModal from '@/components/report/ReportModal.vue';
-import { getArticles } from '@/api/news';
+import { getArticles, getPublishers } from '@/api/news';
+
+const props = defineProps({
+  // { code, name } — 지정되면 해당 종목이 언급된 기사만 조회
+  stockFilter: { type: Object, default: null },
+});
+defineEmits(['clear-stock']);
 
 // 상태 관리
 const articles = ref([]);
 const isLoading = ref(false);
-const selectedSource = ref('전체');
+const selectedPublisher = ref('전체');
+const publishers = ref([]); // [{ name, count }]
 const onlyLowScore = ref(false);
 const selectedArticle = ref(null);
 const errorMessage = ref('');
+
+// 탭 목록: 전체 + 수집 대상 언론사
+const publisherTabs = computed(() => [
+  { name: '전체', count: null },
+  ...publishers.value,
+]);
+
+const fetchPublishers = async () => {
+  try {
+    const data = await getPublishers();
+    publishers.value = Array.isArray(data) ? data : [];
+  } catch (err) {
+    // 언론사 목록을 못 받아도 '전체' 탭으로 계속 사용 가능
+    publishers.value = [];
+  }
+};
 
 // 백엔드 데이터 수집 함수
 const fetchNewsArticles = async () => {
   isLoading.value = true;
   errorMessage.value = '';
   try {
-    const data = await getArticles({ limit: 100 });
+    const params = { limit: 100 };
+    if (props.stockFilter) params.stock_code = props.stockFilter.code;
+    if (selectedPublisher.value !== '전체') params.publisher = selectedPublisher.value;
+    const data = await getArticles(params);
     
     if (!Array.isArray(data)) {
       console.warn("응답 데이터가 배열 형식이 아닙니다:", data);
@@ -112,35 +163,14 @@ const fetchNewsArticles = async () => {
         }
       }
 
-      // 소문자 변환 후 공백 제거
-      const rawSrc = item.source ? String(item.source).trim().toLowerCase() : '';
-      const rawPub = item.publisher ? String(item.publisher).trim().toLowerCase() : '';
-
-      let displaySource = '네이버금융';
-
-      // 💡 [핵심 수정] 1순위: rawSrc가 'hankyung', '한국경제', 또는 코드 '015'인 경우
-      // (crawlers/hankyung_crawler.py에서 명시한 source="한국경제" 기준)
-      if (rawSrc === '한국경제' || rawSrc.includes('hankyung') || rawSrc === '015') {
-        displaySource = '한국경제';
-      } 
-      // 💡 2순위: rawSrc가 'naver', '네이버금융' 등 네이버 관련 출처인 경우
-      else if (rawSrc.includes('naver') || rawSrc.includes('네이버')) {
-        displaySource = '네이버금융';
-      }
-      // 💡 3순위: rawSrc 판별이 불명확할 때 publisher 체크
-      else if (rawPub.includes('한국경제')) {
-        displaySource = '한국경제';
-      } else {
-        displaySource = '네이버금융';
-      }
-
       return {
         id: item.id,
         title: item.title || '제목 없음',
-        content: item.content || '본문 내용이 없습니다.',
-        source: displaySource,
+        url: item.url,
+        analyzed: item.evaluation?.status === 'COMPLETED',
         publisher: item.publisher || '언론사 미지정',
         published_at: formatDate(item.published_at),
+        stocks: item.stocks || [],
         score: item.evaluation?.score ?? 0,
         summary: reportData.summary || '상세 요약 정보가 없습니다.',
         report_data: reportData
@@ -171,21 +201,20 @@ const formatDate = (dateStr) => {
   }
 };
 
-// 필터링 계산 속성 보완
+// 언론사 필터는 서버에서 처리하므로 여기서는 점수 필터만 적용
 const filteredArticles = computed(() => {
-  return articles.value.filter(article => {
-    // 탭 이름('전체', '네이버금융', '한국경제')과 정확히 match
-    const matchSource = selectedSource.value === '전체' || article.source === selectedSource.value;
-    const matchScore = !onlyLowScore.value || article.score < 50;
-    return matchSource && matchScore;
-  });
+  return articles.value.filter(article => !onlyLowScore.value || article.score < 50);
 });
 
 const openReportModal = (article) => {
   selectedArticle.value = article;
 };
 
+// 종목/언론사 필터가 바뀌면 서버에서 다시 조회
+watch([() => props.stockFilter?.code, selectedPublisher], fetchNewsArticles);
+
 onMounted(() => {
+  fetchPublishers();
   fetchNewsArticles();
 });
 </script>

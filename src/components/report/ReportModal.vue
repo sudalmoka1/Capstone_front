@@ -9,9 +9,18 @@
       <div class="flex justify-between items-start gap-4">
         <div>
           <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 mr-2">
-            {{ article.source }}
+            {{ article.publisher }}
           </span>
-          <span class="text-xs text-slate-400">{{ article.publisher }}</span>
+          <span class="text-xs text-slate-400">{{ article.published_at }}</span>
+          <a
+            v-if="article.url"
+            :href="article.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="ml-2 text-xs font-semibold text-indigo-600 hover:underline"
+          >
+            원문 보기 ↗
+          </a>
           <h3 class="font-bold text-slate-900 text-lg mt-1 leading-snug">{{ article.title }}</h3>
         </div>
         <button
