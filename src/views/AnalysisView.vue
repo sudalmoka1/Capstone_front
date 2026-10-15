@@ -101,6 +101,9 @@
       </section>
     </template>
 
+    <!-- AI 판정 검증: 사람 라벨과의 일치도 (집계 기간과 무관한 고정 결과) -->
+    <ValidationSummary />
+
     <!-- AI 점수 검증: 기사 후 실제 주가 반응 (위 집계 기간과 별개로 최근 90일 기준) -->
     <ReactionSummary />
   </div>
@@ -111,6 +114,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import StockBarChart from '@/components/analysis/StockBarChart.vue';
 import StockScoreboard from '@/components/analysis/StockScoreboard.vue';
 import ReactionSummary from '@/components/analysis/ReactionSummary.vue';
+import ValidationSummary from '@/components/analysis/ValidationSummary.vue';
 import { getStockRanking } from '@/api/news';
 
 defineEmits(['select-stock']);
