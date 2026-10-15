@@ -22,3 +22,27 @@ export const getPublishers = async () => {
 export const getStockRanking = async (params = {}) => {
   return await api.get('/api/stocks/ranking', { params });
 };
+
+/**
+ * 종목 일봉(OHLCV) 데이터 (기사 클릭 시 주가 차트)
+ * @param {string} stockCode - 종목코드 (예: 005930)
+ * @param {Object} params - { period: '1mo' | '3mo' | '6mo' | '1y' }
+ */
+export const getStockChart = async (stockCode, params = {}) => {
+  return await api.get(`/api/stocks/${stockCode}/chart`, { params });
+};
+
+/**
+ * 스케줄러 가동 여부, 마지막 수집/분석 시각, 분석 대기 건수 (헤더 상태 표시)
+ */
+export const getSchedulerStatus = async () => {
+  return await api.get('/api/status');
+};
+
+/**
+ * AI 점수 구간별 / 과장 판정별 기사 발행 후 주가 반응 집계
+ * @param {Object} params - { days }
+ */
+export const getReactionSummary = async (params = {}) => {
+  return await api.get('/api/reactions/summary', { params });
+};

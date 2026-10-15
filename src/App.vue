@@ -1,30 +1,39 @@
 <template>
-  <div class="min-h-screen bg-slate-50 text-slate-800 font-sans">
+  <div class="min-h-screen flex flex-col bg-slate-50 text-slate-800 font-sans">
     <!-- 상단 헤더 -->
     <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-          <div class="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm">
+        <div class="flex items-center space-x-3 min-w-0">
+          <div class="hidden sm:flex h-9 px-3 bg-indigo-600 rounded-xl items-center justify-center text-white font-bold text-sm whitespace-nowrap shadow-sm">
             캡스톤 프로젝트
           </div>
-          <div>
-            <h1 class="font-bold text-slate-900 text-lg leading-tight">증권 뉴스 신뢰도 분석기</h1>
-            <p class="text-xs text-slate-500">FastAPI & LLM powered Analyzer</p>
+          <div class="min-w-0">
+            <h1 class="font-bold text-slate-900 text-base sm:text-lg leading-tight truncate">증권 뉴스 해체 분석기</h1>
+            <p class="text-xs text-slate-500 truncate">Stock News Deconstruction Analyzer</p>
           </div>
         </div>
 
-        <!-- 실시간 상태 -->
-        <div class="flex items-center space-x-4">
-          <span class="inline-flex items-center text-xs font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
-            스케줄러 가동 중
+        <!-- 실시간 상태 (scheduler.py의 생존 신호 기준, 1분마다 갱신) -->
+        <div class="flex items-center gap-3 shrink-0 ml-3">
+          <span v-if="statusDetail" class="hidden md:inline text-xs text-slate-400 whitespace-nowrap">
+            {{ statusDetail }}
+          </span>
+          <span
+            :title="statusDetail"
+            :class="[
+              'inline-flex items-center whitespace-nowrap text-xs font-medium px-2.5 py-1 rounded-full border',
+              schedulerBadge.style
+            ]"
+          >
+            <span :class="['w-1.5 h-1.5 rounded-full mr-1.5', schedulerBadge.dot]"></span>
+            <span v-if="schedulerBadge.prefix" class="hidden sm:inline mr-1">{{ schedulerBadge.prefix }}</span>{{ schedulerBadge.label }}
           </span>
         </div>
       </div>
     </header>
 
     <!-- 메뉴바 -->
-    <nav class="sticky top-16 z-20 bg-white border-b border-slate-200">
+    <nav class="sticky top-16 z-20 bg-white border-b border-slate-300 shadow-[0_4px_12px_-2px_rgba(15,23,42,0.12)]">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1">
         <button
           v-for="tab in tabs"
@@ -42,8 +51,13 @@
       </div>
     </nav>
 
+    <!-- 테스트용 시간 고정 안내 (개발 서버 + VITE_TEST_NOW 설정 시에만) -->
+    <div v-if="testNow" class="bg-amber-100 border-b border-amber-300 text-amber-800 text-xs font-semibold text-center px-4 py-1.5">
+      🧪 테스트 모드: 현재 시각을 {{ testNow.toLocaleString('ko-KR') }}(으)로 고정 중 (.env.development.local)
+    </div>
+
     <!-- 메인 콘텐츠 영역 -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="w-full flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <KeepAlive>
         <DashboardView
           v-if="currentTab === 'news'"
@@ -53,13 +67,95 @@
         <AnalysisView v-else @select-stock="goToNews" />
       </KeepAlive>
     </main>
+
+    <!-- 푸터: 프로젝트 안내 및 면책 고지 -->
+    <footer class="border-t border-slate-300 bg-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-3 text-xs text-slate-500 leading-relaxed break-keep">
+        <p class="font-bold text-slate-700">
+          서일대학교 졸업작품 · 증권 뉴스 해체 분석기
+        </p>
+        <ul class="space-y-1">
+          <li>본 사이트는 학업 및 연구를 위한 <span class="font-semibold text-slate-600">비영리 목적</span>으로 제작되었으며, 어떠한 상업적 이익도 추구하지 않습니다.</li>
+          <li>제공되는 AI 분석 결과, 신뢰도 점수, 주가 정보는 참고용이며 <span class="font-semibold text-slate-600">특정 종목의 매수·매도를 권유하지 않습니다.</span> 분석 결과는 부정확하거나 지연될 수 있습니다.</li>
+          <li>모든 투자 판단과 그에 따른 손익의 <span class="font-semibold text-slate-600">책임은 투자자 본인</span>에게 있으며, 제작자는 이 사이트의 정보를 이용해 발생한 손실에 대해 책임지지 않습니다.</li>
+          <li>뉴스 기사의 저작권은 각 언론사에 있습니다. 원문은 각 기사의 "원문 보기" 링크에서 확인하세요.</li>
+          <li>
+            주가 데이터: Yahoo Finance · 차트:
+            <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer" class="underline hover:text-indigo-600">TradingView</a>
+            Lightweight Charts™
+          </li>
+        </ul>
+        <p class="text-slate-400">© {{ new Date().getFullYear() }} 서일대학교 캡스톤 프로젝트</p>
+      </div>
+    </footer>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import DashboardView from './views/DashboardView.vue';
 import AnalysisView from './views/AnalysisView.vue';
+import { getSchedulerStatus } from './api/news';
+import { now, testNow } from './utils/clock';
+
+// ── 스케줄러 상태 ──
+const schedulerStatus = ref(null); // { running, mode, last_crawl_at, last_analyze_at, pending }
+const statusError = ref(false);
+let statusTimer = null;
+
+const fetchSchedulerStatus = async () => {
+  try {
+    schedulerStatus.value = await getSchedulerStatus();
+    statusError.value = false;
+  } catch (err) {
+    statusError.value = true;
+  }
+};
+
+const schedulerBadge = computed(() => {
+  if (statusError.value) {
+    return { label: '서버 연결 안 됨', prefix: '', style: 'text-rose-600 bg-rose-50 border-rose-200', dot: 'bg-rose-500' };
+  }
+  const s = schedulerStatus.value;
+  if (!s) {
+    return { label: '확인 중', prefix: '스케줄러', style: 'text-slate-500 bg-slate-50 border-slate-200', dot: 'bg-slate-300' };
+  }
+  if (!s.running) {
+    return { label: '중지됨', prefix: '스케줄러', style: 'text-slate-500 bg-slate-100 border-slate-200', dot: 'bg-slate-400' };
+  }
+  return {
+    label: s.mode === 'analyze-only' ? '분석 중' : '가동 중',
+    prefix: '스케줄러',
+    style: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+    dot: 'bg-emerald-500 animate-pulse',
+  };
+});
+
+const timeAgo = (iso) => {
+  if (!iso) return null;
+  const min = Math.floor((now() - new Date(iso).getTime()) / 60000);
+  if (isNaN(min)) return null;
+  if (min < 1) return '방금';
+  if (min < 60) return `${min}분 전`;
+  if (min < 60 * 24) return `${Math.floor(min / 60)}시간 전`;
+  return `${Math.floor(min / (60 * 24))}일 전`;
+};
+
+const statusDetail = computed(() => {
+  const s = schedulerStatus.value;
+  if (!s || statusError.value) return '';
+  const parts = [];
+  const crawled = timeAgo(s.last_crawl_at);
+  if (crawled) parts.push(`수집 ${crawled}`);
+  parts.push(s.pending > 0 ? `분석 대기 ${s.pending}건` : '분석 대기 없음');
+  return parts.join(' · ');
+});
+
+onMounted(() => {
+  fetchSchedulerStatus();
+  statusTimer = setInterval(fetchSchedulerStatus, 60 * 1000);
+});
+onBeforeUnmount(() => clearInterval(statusTimer));
 
 const tabs = [
   { key: 'news', label: '증권 뉴스' },

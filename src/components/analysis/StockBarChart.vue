@@ -14,15 +14,15 @@
         v-for="row in rows"
         :key="row.stock_code"
         @click="$emit('select', row)"
-        class="group flex items-center gap-3 cursor-pointer"
+        class="group flex items-center gap-2 sm:gap-3 cursor-pointer"
         :title="`${row.stock_name}: 언급 ${row.mentions}건` + (row.avg_score !== null ? `, 평균 ${row.avg_score}점` : ', 분석 전')"
       >
-        <span class="w-6 text-right text-xs font-bold text-slate-400">{{ row.rank }}</span>
-        <span class="w-28 sm:w-36 truncate text-sm font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors">
+        <span class="w-5 sm:w-6 shrink-0 text-right text-xs font-bold text-slate-400">{{ row.rank }}</span>
+        <span class="w-20 sm:w-36 shrink-0 truncate text-sm font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors">
           {{ row.stock_name }}
         </span>
 
-        <div class="flex-1 h-7 bg-slate-100 rounded-md overflow-hidden relative">
+        <div class="flex-1 min-w-0 h-7 bg-slate-100 rounded-md overflow-hidden relative">
           <div
             class="h-full rounded-md transition-all duration-500"
             :class="barColor(row.avg_score)"
@@ -30,9 +30,9 @@
           ></div>
         </div>
 
-        <span class="w-10 text-right text-sm font-bold text-slate-700">{{ row.mentions }}</span>
+        <span class="w-7 sm:w-10 shrink-0 text-right text-sm font-bold text-slate-700">{{ row.mentions }}</span>
         <span
-          class="w-14 text-center text-xs font-bold px-2 py-1 rounded-full border"
+          class="w-12 sm:w-14 shrink-0 text-center text-xs font-bold px-1 sm:px-2 py-1 rounded-full border"
           :class="scoreBadge(row.avg_score)"
         >
           {{ row.avg_score !== null ? Math.round(row.avg_score) + '점' : '-' }}

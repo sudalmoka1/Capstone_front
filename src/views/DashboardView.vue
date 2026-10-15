@@ -51,7 +51,7 @@
         </label>
 
         <button
-          @click="fetchNewsArticles"
+          @click="fetchNewsArticles()"
           :disabled="isLoading"
           class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition flex items-center space-x-1"
         >
@@ -74,6 +74,23 @@
         :article="article"
         @select="openReportModal"
       />
+    </div>
+
+    <!-- 더 보기 (서버 페이지네이션) -->
+    <div v-if="!isLoading && hasMore && articles.length > 0" class="flex flex-col items-center gap-2 pt-2">
+      <button
+        @click="loadMore"
+        :disabled="isLoadingMore"
+        class="w-full sm:w-auto sm:min-w-80 inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-2xl text-sm font-bold shadow-md shadow-indigo-200 hover:shadow-lg transition disabled:opacity-60 disabled:cursor-wait"
+      >
+        <span
+          v-if="isLoadingMore"
+          class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+        ></span>
+        <span>{{ isLoadingMore ? '기사 불러오는 중...' : `기사 ${PAGE_SIZE}건 더 보기` }}</span>
+        <span v-if="!isLoadingMore" aria-hidden="true">↓</span>
+      </button>
+      <p class="text-xs text-slate-400">현재 {{ articles.length }}건 표시 중</p>
     </div>
 
     <!-- 연결 실패 -->
@@ -111,6 +128,8 @@ defineEmits(['clear-stock']);
 // 상태 관리
 const articles = ref([]);
 const isLoading = ref(false);
+const isLoadingMore = ref(false);
+const hasMore = ref(false);
 const selectedPublisher = ref('전체');
 const publishers = ref([]); // [{ name, count }]
 const onlyLowScore = ref(false);
@@ -133,56 +152,81 @@ const fetchPublishers = async () => {
   }
 };
 
-// 백엔드 데이터 수집 함수
+const PAGE_SIZE = 100;
+
+// 현재 필터 기준으로 offset부터 한 페이지 조회
+const requestPage = async (offset) => {
+  const params = { limit: PAGE_SIZE, offset };
+  if (props.stockFilter) params.stock_code = props.stockFilter.code;
+  if (selectedPublisher.value !== '전체') params.publisher = selectedPublisher.value;
+  const data = await getArticles(params);
+  if (!Array.isArray(data)) {
+    console.warn("응답 데이터가 배열 형식이 아닙니다:", data);
+    return [];
+  }
+  return data;
+};
+
+// 백엔드 데이터 수집 함수 (첫 페이지부터 다시)
 const fetchNewsArticles = async () => {
   isLoading.value = true;
   errorMessage.value = '';
   try {
-    const params = { limit: 100 };
-    if (props.stockFilter) params.stock_code = props.stockFilter.code;
-    if (selectedPublisher.value !== '전체') params.publisher = selectedPublisher.value;
-    const data = await getArticles(params);
-    
-    if (!Array.isArray(data)) {
-      console.warn("응답 데이터가 배열 형식이 아닙니다:", data);
-      articles.value = [];
-      return;
-    }
-
-    console.log("백엔드 수신 데이터 100건:", data);
-
-    articles.value = data.map(item => {
-      let reportData = {};
-      if (item.evaluation && item.evaluation.report) {
-        try {
-          reportData = typeof item.evaluation.report === 'string'
-            ? JSON.parse(item.evaluation.report)
-            : item.evaluation.report;
-        } catch (e) {
-          reportData = { summary: String(item.evaluation.report) };
-        }
-      }
-
-      return {
-        id: item.id,
-        title: item.title || '제목 없음',
-        url: item.url,
-        analyzed: item.evaluation?.status === 'COMPLETED',
-        publisher: item.publisher || '언론사 미지정',
-        published_at: formatDate(item.published_at),
-        stocks: item.stocks || [],
-        score: item.evaluation?.score ?? 0,
-        summary: reportData.summary || '상세 요약 정보가 없습니다.',
-        report_data: reportData
-      };
-    });
+    const data = await requestPage(0);
+    articles.value = data.map(toArticle);
+    hasMore.value = data.length === PAGE_SIZE;
   } catch (err) {
     console.error('뉴스 데이터 로딩 실패:', err);
     articles.value = [];
+    hasMore.value = false;
     errorMessage.value = err.message || '알 수 없는 오류';
   } finally {
     isLoading.value = false;
   }
+};
+
+// 다음 페이지를 이어 붙이기
+const loadMore = async () => {
+  isLoadingMore.value = true;
+  try {
+    const data = await requestPage(articles.value.length);
+    const seen = new Set(articles.value.map(a => a.id)); // 그사이 새 기사가 들어와 밀린 중복 제거
+    articles.value.push(...data.map(toArticle).filter(a => !seen.has(a.id)));
+    hasMore.value = data.length === PAGE_SIZE;
+  } catch (err) {
+    console.error('추가 뉴스 로딩 실패:', err);
+  } finally {
+    isLoadingMore.value = false;
+  }
+};
+
+// API 응답 → 카드/모달용 객체
+const toArticle = (item) => {
+  let reportData = {};
+  if (item.evaluation && item.evaluation.report) {
+    try {
+      reportData = typeof item.evaluation.report === 'string'
+        ? JSON.parse(item.evaluation.report)
+        : item.evaluation.report;
+    } catch (e) {
+      reportData = { summary: String(item.evaluation.report) };
+    }
+  }
+
+  return {
+    id: item.id,
+    title: item.title || '제목 없음',
+    url: item.url,
+    analyzed: item.evaluation?.status === 'COMPLETED',
+    publisher: item.publisher || '언론사 미지정',
+    published_at: formatDate(item.published_at),
+    published_at_raw: item.published_at,
+    stocks: item.stocks || [],
+    reaction: item.reaction || null,
+    score: item.evaluation?.score ?? 0,
+    summary: reportData.summary || '상세 요약 정보가 없습니다.',
+    report_data: reportData
+  };
 };
 
 // 날짜 포맷팅 헬퍼
@@ -203,7 +247,8 @@ const formatDate = (dateStr) => {
 
 // 언론사 필터는 서버에서 처리하므로 여기서는 점수 필터만 적용
 const filteredArticles = computed(() => {
-  return articles.value.filter(article => !onlyLowScore.value || article.score < 50);
+  // 분석 전 기사(점수 없음)는 과장 의심 필터에서 제외
+  return articles.value.filter(article => !onlyLowScore.value || (article.analyzed && article.score < 50));
 });
 
 const openReportModal = (article) => {

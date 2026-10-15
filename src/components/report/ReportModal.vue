@@ -1,10 +1,12 @@
 <template>
+  <!-- 열릴 때: 배경 페이드인 + 패널이 아래에서 위로 올라옴 / 닫힐 때: 반대로 -->
+  <Transition name="modal" :duration="{ enter: 400, leave: 250 }">
   <div
     v-if="article"
     class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
     @click.self="$emit('close')"
   >
-    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 my-8">
+    <div class="modal-panel bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 my-8">
       <!-- 모달 헤더 -->
       <div class="flex justify-between items-start gap-4">
         <div>
@@ -31,6 +33,39 @@
         </button>
       </div>
 
+      <!-- 관련 종목 주가 차트 -->
+      <div v-if="article.stocks && article.stocks.length" class="space-y-2">
+        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">주가 차트</h4>
+        <StockChart :key="article.id" :stocks="article.stocks" :article-date="article.published_at_raw" />
+
+        <!-- 기사 이후 실제 주가 반응 (대표 종목, 시장 대비) -->
+        <div v-if="article.reaction" class="grid grid-cols-2 gap-2">
+          <div
+            v-for="h in reactionItems"
+            :key="h.label"
+            class="rounded-xl border border-slate-200 bg-slate-50 p-3"
+          >
+            <p class="text-[11px] font-semibold text-slate-500">기사 {{ h.label }} 주가</p>
+            <template v-if="h.ret !== null">
+              <p class="text-base font-extrabold" :class="h.ret >= 0 ? 'text-rose-500' : 'text-blue-500'">
+                {{ fmtPct(h.ret) }}
+              </p>
+              <p v-if="h.excess !== null" class="text-[11px]" :class="h.excess >= 0 ? 'text-rose-400' : 'text-blue-400'">
+                시장 대비 {{ fmtPoint(h.excess) }}
+              </p>
+            </template>
+            <p v-else class="text-xs text-slate-400 mt-1">아직 {{ h.label.replace(' 후', '') }}이 지나지 않았어요</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 아직 분석 전인 기사 -->
+      <div v-if="!article.analyzed" class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center space-y-1">
+        <p class="text-sm font-bold text-slate-600">아직 AI 분석 전인 기사입니다</p>
+        <p class="text-xs text-slate-400">스케줄러가 순서대로 분석하고 있어요. 잠시 후 새로고침해 보세요.</p>
+      </div>
+
+      <template v-else>
       <!-- AI 신뢰도 요약 박스 -->
       <div class="bg-indigo-50/70 p-4 rounded-xl border border-indigo-100 space-y-2">
         <div class="flex items-center justify-between">
@@ -68,6 +103,7 @@
           </div>
         </div>
       </div>
+      </template>
 
       <!-- 닫기 버튼 -->
       <button
@@ -78,10 +114,14 @@
       </button>
     </div>
   </div>
+  </Transition>
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue';
+import StockChart from '@/components/analysis/StockChart.vue';
+
+const props = defineProps({
   article: {
     type: Object,
     default: null
@@ -89,4 +129,52 @@ defineProps({
 });
 
 defineEmits(['close']);
+
+const reactionItems = computed(() => {
+  const r = props.article?.reaction;
+  if (!r) return [];
+  return [
+    { label: '1거래일 후', ret: r.ret_1d, excess: r.excess_1d },
+    { label: '5거래일 후', ret: r.ret_5d, excess: r.excess_5d },
+  ];
+});
+
+const fmtPct = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+const fmtPoint = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%p`;
 </script>
+<style scoped>
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.25s ease, backdrop-filter 0.25s ease;
+}
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-active .modal-panel {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+}
+.modal-leave-active .modal-panel {
+  transition: transform 0.25s ease-in, opacity 0.2s ease-in;
+}
+.modal-enter-from .modal-panel {
+  transform: translateY(60px) scale(0.98);
+  opacity: 0;
+}
+.modal-leave-to .modal-panel {
+  transform: translateY(40px);
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-enter-active .modal-panel,
+  .modal-leave-active .modal-panel {
+    transition: opacity 0.2s ease;
+  }
+  .modal-enter-from .modal-panel,
+  .modal-leave-to .modal-panel {
+    transform: none;
+  }
+}
+</style>

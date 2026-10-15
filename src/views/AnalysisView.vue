@@ -3,14 +3,14 @@
     <!-- 컨트롤 패널 -->
     <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
       <div class="flex items-center gap-3 w-full sm:w-auto">
-        <span class="text-xs font-bold text-slate-500">집계 기간</span>
+        <span class="text-xs font-bold text-slate-500 whitespace-nowrap">집계 기간</span>
         <div class="flex bg-slate-100 p-1 rounded-xl">
           <button
             v-for="opt in periodOptions"
             :key="opt.days"
             @click="days = opt.days"
             :class="[
-              'px-4 py-2 text-xs font-bold rounded-lg transition-all',
+              'px-3 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap',
               days === opt.days ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             ]"
           >
@@ -20,14 +20,14 @@
       </div>
 
       <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-        <span class="text-xs font-bold text-slate-500">표시 종목</span>
+        <span class="text-xs font-bold text-slate-500 whitespace-nowrap">표시 종목</span>
         <div class="flex bg-slate-100 p-1 rounded-xl">
           <button
             v-for="n in [10, 20]"
             :key="n"
             @click="limit = n"
             :class="[
-              'px-4 py-2 text-xs font-bold rounded-lg transition-all',
+              'px-3 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap',
               limit === n ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             ]"
           >
@@ -37,7 +37,7 @@
         <button
           @click="fetchRanking"
           :disabled="isLoading"
-          class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition"
+          class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition whitespace-nowrap"
         >
           🔄 새로고침
         </button>
@@ -93,13 +93,16 @@
 
       <!-- 스코어보드 -->
       <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6">
-        <div class="flex items-center justify-between mb-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3">
           <h2 class="font-bold text-slate-900">종목 스코어보드</h2>
           <span class="text-xs text-slate-400">행을 클릭하면 해당 종목의 기사를 볼 수 있습니다</span>
         </div>
         <StockScoreboard :rows="rows" @select="(r) => $emit('select-stock', toFilter(r))" />
       </section>
     </template>
+
+    <!-- AI 점수 검증: 기사 후 실제 주가 반응 (위 집계 기간과 별개로 최근 90일 기준) -->
+    <ReactionSummary />
   </div>
 </template>
 
@@ -107,6 +110,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import StockBarChart from '@/components/analysis/StockBarChart.vue';
 import StockScoreboard from '@/components/analysis/StockScoreboard.vue';
+import ReactionSummary from '@/components/analysis/ReactionSummary.vue';
 import { getStockRanking } from '@/api/news';
 
 defineEmits(['select-stock']);
