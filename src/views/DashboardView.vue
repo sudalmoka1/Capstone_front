@@ -66,6 +66,13 @@
       <p class="text-xs font-semibold text-slate-500">FastAPI 서버에서 뉴스와 AI 분석 데이터를 불러오는 중...</p>
     </div>
 
+    <!-- 연결 실패 -->
+    <div v-else-if="errorMessage" class="text-center py-16 bg-rose-50 rounded-2xl border border-rose-200">
+      <p class="text-sm font-bold text-rose-600">백엔드 연결 실패</p>
+      <p class="text-xs text-rose-500 mt-1">{{ errorMessage }}</p>
+      <p class="text-xs text-slate-500 mt-2">http://localhost:8000 에서 uvicorn 서버가 실행 중인지 확인하세요.</p>
+    </div>
+
     <!-- 뉴스 기사 카드 그리드 -->
     <div v-else-if="filteredArticles.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
       <NewsCard
@@ -74,6 +81,11 @@
         :article="article"
         @select="openReportModal"
       />
+    </div>
+
+    <!-- 데이터 없음 -->
+    <div v-else class="text-center py-16 bg-white rounded-2xl border border-slate-200">
+      <p class="text-sm text-slate-500">조건에 부합하는 분석 완료 기사 데이터가 없습니다.</p>
     </div>
 
     <!-- 더 보기 (서버 페이지네이션) -->
@@ -91,18 +103,6 @@
         <span v-if="!isLoadingMore" aria-hidden="true">↓</span>
       </button>
       <p class="text-xs text-slate-400">현재 {{ articles.length }}건 표시 중</p>
-    </div>
-
-    <!-- 연결 실패 -->
-    <div v-else-if="errorMessage" class="text-center py-16 bg-rose-50 rounded-2xl border border-rose-200">
-      <p class="text-sm font-bold text-rose-600">백엔드 연결 실패</p>
-      <p class="text-xs text-rose-500 mt-1">{{ errorMessage }}</p>
-      <p class="text-xs text-slate-500 mt-2">http://localhost:8000 에서 uvicorn 서버가 실행 중인지 확인하세요.</p>
-    </div>
-
-    <!-- 데이터 없음 -->
-    <div v-else class="text-center py-16 bg-white rounded-2xl border border-slate-200">
-      <p class="text-sm text-slate-500">조건에 부합하는 분석 완료 기사 데이터가 없습니다.</p>
     </div>
 
     <!-- AI 리포트 모달 -->
