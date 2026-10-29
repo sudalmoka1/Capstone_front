@@ -35,9 +35,9 @@
 
     <!-- 항목별 일치도 -->
     <div class="space-y-3">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <h3 class="text-xs font-bold text-slate-500">항목별 일치도 (Cohen's κ, 1에 가까울수록 일치)</h3>
-        <div class="flex items-center gap-3 text-[11px] text-slate-600">
+        <div class="flex items-center gap-3 text-[11px] text-slate-600 whitespace-nowrap shrink-0">
           <span class="flex items-center gap-1"><span :class="['w-2.5 h-2.5 rounded-sm', colors.human]"></span>사람끼리</span>
           <span class="flex items-center gap-1"><span :class="['w-2.5 h-2.5 rounded-sm', colors.ai]"></span>우리 AI</span>
           <span class="flex items-center gap-1"><span :class="['w-2.5 h-2.5 rounded-sm', colors.gpt]"></span>GPT</span>

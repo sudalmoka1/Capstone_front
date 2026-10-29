@@ -19,7 +19,7 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+      <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto sm:justify-end">
         <span class="text-xs font-bold text-slate-500 whitespace-nowrap">표시 종목</span>
         <div class="flex bg-slate-100 p-1 rounded-xl">
           <button

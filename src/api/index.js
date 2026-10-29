@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000', // FastAPI 백엔드 주소
+  baseURL: import.meta.env.PROD ? '' : 'http://localhost:8000', // FastAPI 백엔드 주소
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
