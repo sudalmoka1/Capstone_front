@@ -95,11 +95,14 @@
       <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3">
           <h2 class="font-bold text-slate-900">종목 스코어보드</h2>
-          <span class="text-xs text-slate-400">행을 클릭하면 해당 종목의 기사를 볼 수 있습니다</span>
+          <span class="text-xs text-slate-400">열 제목을 누르면 정렬 순서가 바뀌고, 행을 누르면 해당 종목의 기사를 볼 수 있습니다</span>
         </div>
         <StockScoreboard :rows="rows" @select="(r) => $emit('select-stock', toFilter(r))" />
       </section>
     </template>
+
+    <!-- 언론사별 기사 신뢰도 (위 집계 기간과 별개로 최근 90일 기준, 기사 점수에는 반영하지 않음) -->
+    <PublisherRanking />
 
     <!-- AI 판정 검증: 사람 라벨과의 일치도 (집계 기간과 무관한 고정 결과) -->
     <ValidationSummary />
@@ -115,6 +118,7 @@ import StockBarChart from '@/components/analysis/StockBarChart.vue';
 import StockScoreboard from '@/components/analysis/StockScoreboard.vue';
 import ReactionSummary from '@/components/analysis/ReactionSummary.vue';
 import ValidationSummary from '@/components/analysis/ValidationSummary.vue';
+import PublisherRanking from '@/components/analysis/PublisherRanking.vue';
 import { getStockRanking } from '@/api/news';
 
 defineEmits(['select-stock']);

@@ -16,6 +16,14 @@ export const getPublishers = async () => {
 };
 
 /**
+ * 언론사별 AI 판정 집계 (평균 신뢰도 순위, 항목별 비율)
+ * @param {Object} params - { days }
+ */
+export const getPublisherRanking = async (params = {}) => {
+  return await api.get('/api/publishers/ranking', { params });
+};
+
+/**
  * 종목별 언급 순위 (스코어보드/그래프)
  * @param {Object} params - { days, limit }
  */
