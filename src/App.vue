@@ -80,7 +80,8 @@
     <footer class="border-t border-slate-300 bg-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-3 text-xs text-slate-500 leading-relaxed break-keep">
         <p class="font-bold text-slate-700">
-          서일대학교 졸업작품 · 증권 뉴스 해체 분석기
+          증권 뉴스 해체 분석기 · 팀 ALL BLUE
+          <span class="font-normal text-slate-500">(서일대학교 졸업작품)</span>
         </p>
         <ul class="space-y-1">
           <li>본 사이트는 학업 및 연구를 위한 <span class="font-semibold text-slate-600">비영리 목적</span>으로 제작되었으며, 어떠한 상업적 이익도 추구하지 않습니다.</li>
@@ -93,7 +94,7 @@
             Lightweight Charts™
           </li>
         </ul>
-        <p class="text-slate-400">© {{ new Date().getFullYear() }} 서일대학교 캡스톤 프로젝트</p>
+        <p class="text-slate-400">© {{ new Date().getFullYear() }} 팀 ALL BLUE · 서일대학교 캡스톤 프로젝트</p>
       </div>
     </footer>
 
