@@ -4,9 +4,7 @@
     <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div class="flex items-center space-x-3 min-w-0">
-          <div class="hidden sm:flex h-9 px-3 bg-indigo-600 rounded-xl items-center justify-center text-white font-bold text-sm whitespace-nowrap shadow-sm">
-            캡스톤 프로젝트
-          </div>
+          <img :src="logo" alt="ALL BLUE" class="h-12 w-auto shrink-0 select-none" draggable="false" />
           <div class="min-w-0">
             <h1 class="font-bold text-slate-900 text-base sm:text-lg leading-tight truncate">증권 뉴스 해체 분석기</h1>
             <p class="text-xs text-slate-500 truncate">Stock News Deconstruction Analyzer</p>
@@ -97,6 +95,7 @@ import DashboardView from './views/DashboardView.vue';
 import AnalysisView from './views/AnalysisView.vue';
 import { getSchedulerStatus } from './api/news';
 import { now, testNow } from './utils/clock';
+import logo from './assets/logo.png';
 
 // ── 스케줄러 상태 ──
 const schedulerStatus = ref(null); // { running, mode, last_crawl_at, last_analyze_at, pending }
