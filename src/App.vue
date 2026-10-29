@@ -3,8 +3,8 @@
     <!-- 상단 헤더 -->
     <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div class="flex items-center space-x-3 min-w-0">
-          <img :src="logo" alt="ALL BLUE" class="h-12 w-auto shrink-0 select-none" draggable="false" />
+        <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
+          <img :src="logo" alt="ALL BLUE" class="h-10 sm:h-12 w-auto shrink-0 select-none" draggable="false" />
           <div class="min-w-0">
             <h1 class="font-bold text-slate-900 text-base sm:text-lg leading-tight truncate">증권 뉴스 해체 분석기</h1>
             <p class="text-xs text-slate-500 truncate">Stock News Deconstruction Analyzer</p>
@@ -12,10 +12,20 @@
         </div>
 
         <!-- 실시간 상태 (scheduler.py의 생존 신호 기준, 1분마다 갱신) -->
-        <div class="flex items-center gap-3 shrink-0 ml-3">
+        <div class="flex items-center gap-2 sm:gap-3 shrink-0 ml-3">
           <span v-if="statusDetail" class="hidden md:inline text-xs text-slate-400 whitespace-nowrap">
             {{ statusDetail }}
           </span>
+          <!-- 사이트 안내 다시 보기 -->
+          <button
+            type="button"
+            @click="guideOpen = true"
+            title="사이트 안내 보기"
+            aria-label="사이트 안내 보기"
+            class="w-7 h-7 shrink-0 inline-flex items-center justify-center rounded-full border border-slate-200 text-slate-500 text-sm font-bold hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 transition"
+          >
+            ?
+          </button>
           <span
             :title="statusDetail"
             :class="[
@@ -86,6 +96,9 @@
         <p class="text-slate-400">© {{ new Date().getFullYear() }} 서일대학교 캡스톤 프로젝트</p>
       </div>
     </footer>
+
+    <!-- 첫 방문 안내 -->
+    <GuideModal :open="guideOpen" @close="closeGuide" />
   </div>
 </template>
 
@@ -93,6 +106,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import DashboardView from './views/DashboardView.vue';
 import AnalysisView from './views/AnalysisView.vue';
+import GuideModal from './components/GuideModal.vue';
 import { getSchedulerStatus } from './api/news';
 import { now, testNow } from './utils/clock';
 import logo from './assets/logo.png';
@@ -150,7 +164,26 @@ const statusDetail = computed(() => {
   return parts.join(' · ');
 });
 
+// ── 첫 방문 안내 ──
+// 한 번 닫으면 이 브라우저에서는 다시 띄우지 않음 (헤더의 ? 버튼으로는 언제든 열 수 있음)
+const GUIDE_KEY = 'guideSeen';
+const guideOpen = ref(false);
+
+const closeGuide = () => {
+  guideOpen.value = false;
+  try {
+    localStorage.setItem(GUIDE_KEY, '1');
+  } catch {
+    // 시크릿 모드 등 저장 불가 시에는 다음 방문 때 다시 보일 뿐 동작에는 문제 없음
+  }
+};
+
 onMounted(() => {
+  try {
+    guideOpen.value = !localStorage.getItem(GUIDE_KEY);
+  } catch {
+    guideOpen.value = true;
+  }
   fetchSchedulerStatus();
   statusTimer = setInterval(fetchSchedulerStatus, 60 * 1000);
 });
